@@ -70,5 +70,68 @@
 "use strict";
 
 
+var canvasEl = document.querySelector('.canvas');
+var ctx = canvasEl.getContext('2d');
+
+// utils --->
+var iterate = function iterate(num, fn) {
+  return Array(num).fill().map(function (v, i) {
+    return fn(i);
+  });
+};
+// <---
+
+// hash function
+var getCeilValue = function getCeilValue(x, y, time) {
+  var sectorX = x % 100;
+  var sectorY = y % 100;
+  var sectorTime = time % 100;
+  if (sectorX < sectorTime && sectorY < sectorTime) {
+    return 200;
+  }
+  return 0;
+};
+// <---
+
+// DRAW WORLD --->
+var drawPixel = function drawPixel(x, y, color) {
+  ctx.fillStyle = 'rgb(' + color + ', ' + color + ', ' + color + ')';
+  ctx.fillRect(x, y, 1, 1);
+};
+
+var drawWorld = function drawWorld(time, getCeilValueFn) {
+  var _ctx$canvas = ctx.canvas,
+      width = _ctx$canvas.width,
+      height = _ctx$canvas.height;
+
+  iterate(width * height, function (i) {
+    var x = i % width;
+    var y = Math.floor(i / width);
+    var value = getCeilValueFn(x, y, time);
+    drawPixel(x, y, value);
+  });
+};
+// <---
+
+// start TIME
+var timeTick = function timeTick(time) {
+  drawWorld(time, getCeilValue);
+  requestAnimationFrame(function () {
+    return timeTick(time + 1);
+  });
+};
+//
+
+// Fit CANVAS to window --->
+var fitCanvasToWindow = function fitCanvasToWindow() {
+  ctx.canvas.width = window.innerWidth;
+  ctx.canvas.height = window.innerHeight;
+};
+window.addEventListener('resize', fitCanvasToWindow);
+fitCanvasToWindow();
+// <---
+
+timeTick(0);
+
 /***/ })
 /******/ ]);
