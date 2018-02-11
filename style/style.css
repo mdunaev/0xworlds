@@ -1,0 +1,14 @@
+@import 'https://fonts.googleapis.com/css?family=Roboto+Mono';
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Roboto Mono', monospace;
+}
+
+@media screen and (max-width: 600px) {
+  
+}
