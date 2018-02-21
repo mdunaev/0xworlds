@@ -74,7 +74,7 @@ var _interactjs = __webpack_require__(1);
 
 var _interactjs2 = _interopRequireDefault(_interactjs);
 
-var _Eternity = __webpack_require__(3);
+var _Eternity = __webpack_require__(2);
 
 var _Eternity2 = _interopRequireDefault(_Eternity);
 
@@ -85,9 +85,21 @@ var ctx = canvasEl.getContext('2d');
 
 var state = {
   view: {
-    x: 500,
-    y: 500,
-    scale: 1
+    x: 0,
+    y: 0,
+    scale: 0.5
+  },
+  settings: {
+    scaleSpeed: function scaleSpeed() {
+      return 1000;
+    }, // less - faster
+    dimension: function dimension() {
+      return 4;
+    }
+  },
+  mouse: {
+    x: 0,
+    y: 0
   }
 };
 
@@ -101,23 +113,83 @@ var iterate = function iterate(num, fn) {
 
 // DRAW WORLD --->
 var drawPixel = function drawPixel(x, y, color) {
-  ctx.fillStyle = 'rgb(' + color + ', ' + color + ', ' + color + ')';
+  color = Math.round(color);
+  x = Math.round(x);
+  y = Math.round(y);
   ctx.fillRect(x, y, 1, 1);
 };
 
-var drawWorld = function drawWorld(time, getCeilValueFn) {
+var drawWorld = function drawWorld(time, _EternityFunction) {
   var _ctx$canvas = ctx.canvas,
       width = _ctx$canvas.width,
       height = _ctx$canvas.height;
 
+  ctx.fillStyle = 'rgb(0, 0, 0)';
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#aaa';
   iterate(width * height, function (i) {
     // <--- iterate by canvas
+
     var x = i % width;
     var y = Math.floor(i / width);
-    var value = getCeilValueFn(x - state.view.x / 4, y - state.view.y / 4, time);
-    drawPixel(x, y, value);
+
+    var etX = x / state.view.scale - state.view.x / state.settings.dimension();
+    var etY = y / state.view.scale - state.view.y / state.settings.dimension();
+
+    var value = _EternityFunction(etX, etY, time);
+    if (value !== 0) drawPixel(x, y, value);
   });
 };
+// <---
+
+// Fit CANVAS to window --->
+var fitCanvasToWindow = function fitCanvasToWindow() {
+  ctx.canvas.width = window.innerWidth / state.settings.dimension();
+  ctx.canvas.height = window.innerHeight / state.settings.dimension();
+  canvasEl.style.width = window.innerWidth + 'px';
+  canvasEl.style.height = window.innerHeight + 'px';
+};
+window.addEventListener('resize', fitCanvasToWindow);
+fitCanvasToWindow();
+// <---
+
+// Scale control --->
+window.addEventListener("wheel", function (event) {
+  var scaleDelta = event.deltaY / state.settings.scaleSpeed();
+  var newScale = state.view.scale + scaleDelta;
+  var newWidth = ctx.canvas.width / newScale;
+  var newHeight = ctx.canvas.height / newScale;
+  var oldWidth = ctx.canvas.width / state.view.scale;
+  var oldHeight = ctx.canvas.height / state.view.scale;
+  var adaptiveMouseX = state.mouse.x / state.settings.dimension() / state.view.scale;
+  var adaptiveMouseY = state.mouse.y / state.settings.dimension() / state.view.scale;
+  var mousePercentX = (adaptiveMouseX - oldWidth / 2) / (oldWidth / 2);
+  var mousePercentY = (adaptiveMouseY - oldHeight / 2) / (oldHeight / 2);
+  var widthDiff = oldWidth - newWidth + (oldWidth - newWidth) * mousePercentX;
+  var heightDiff = oldHeight - newHeight + (oldHeight - newHeight) * mousePercentY;
+  state.view.x -= widthDiff / 2 * state.settings.dimension();
+  state.view.y -= heightDiff / 2 * state.settings.dimension();
+  state.view.scale = newScale;
+  event.preventDefault();
+  console.log(newScale);
+});
+// <---
+
+// Mouse POSITION handling --->
+window.addEventListener('mousemove', function (event) {
+  state.mouse.x = event.pageX;
+  state.mouse.y = event.pageY;
+});
+// <---
+
+// Init canvas DRAG --->
+var draggableSettings = {
+  onmove: function onmove(event) {
+    state.view.x += event.dx / state.view.scale;
+    state.view.y += event.dy / state.view.scale;
+  }
+};
+(0, _interactjs2.default)('#canvas').draggable(draggableSettings).styleCursor(false);
 // <---
 
 // start TIME
@@ -127,30 +199,8 @@ var timeTick = function timeTick(time) {
     return timeTick(time + 1);
   });
 };
-//
-
-// Fit CANVAS to window --->
-var fitCanvasToWindow = function fitCanvasToWindow() {
-  ctx.canvas.width = window.innerWidth / 4;
-  ctx.canvas.height = window.innerHeight / 4;
-  canvasEl.style.width = window.innerWidth + 'px';
-  canvasEl.style.height = window.innerHeight + 'px';
-};
-window.addEventListener('resize', fitCanvasToWindow);
-fitCanvasToWindow();
-// <---
-
-// Init canvas DRAG --->
-var draggableSettings = {
-  onmove: function onmove(event) {
-    state.view.x += event.dx;
-    state.view.y += event.dy;
-  }
-};
-(0, _interactjs2.default)('#canvas').draggable(draggableSettings).styleCursor(false);
-// <---
-
 timeTick(0);
+//
 
 /***/ }),
 /* 1 */
@@ -7331,8 +7381,7 @@ win.init = init;
 
 
 /***/ }),
-/* 2 */,
-/* 3 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7342,14 +7391,26 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.default = EternityFunction;
+exports.EternityFunction1 = EternityFunction1;
 function EternityFunction(x, y, time) {
+    if ((x + time / 100000).toString(2).split('1').length + y.toString(2).split('1').length > 60) return x;
+    return 0;
+};
+
+function EternityFunction1(x, y, time) {
     var sectorX = x % 40;
     var sectorY = y % 40;
-    var sectorTime = 5;
+    var sectorTime = teeterTotter(30, time / 2);
     if (Math.abs(sectorX) < Math.abs(sectorTime) && Math.abs(sectorY) < Math.abs(sectorTime)) {
         return 200;
     }
     return 0;
+};
+
+var teeterTotter = function teeterTotter(max, current) {
+    var x2 = current % (max * 2);
+    var x1 = current % max;
+    return x2 > x1 ? max - x1 : x1;
 };
 
 /***/ })
