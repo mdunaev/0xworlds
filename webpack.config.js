@@ -1,28 +1,14 @@
-const path = require('path');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
-
 module.exports = {
-  entry: './App/App.js',
+  mode: 'development',
+  devtool: 'inline-source-map',
+  entry: './app/app.ts',
   output: {
-    filename: 'all.js',
-    path: path.resolve(__dirname, 'scripts')
+    filename: 'scripts/all.js'
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js']
   },
   module: {
-    rules: [
-      {
-        test: /\.js$/,
-        exclude: /(node_modules|bower_components)/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['babel-preset-env']
-          }
-        }
-      }
-    ]
-  },
-  watch: true,
-  plugins: [
-    // new UglifyJsPlugin()
-  ],
+    rules: [{ test: /\.ts?$/, loader: 'ts-loader' }]
+  }
 };
